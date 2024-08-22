@@ -5,7 +5,6 @@ version = "1.0.0-DEV"
 
 [deps]
 Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
-libps5000a_jll = "e5de8f98-00d2-5fcf-8fb0-95a2d4fe7562"
 
 [compat]
 Libdl = "1.11.0"
