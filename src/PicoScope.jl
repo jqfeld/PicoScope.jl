@@ -1,5 +1,7 @@
 module PicoScope
 
-# Write your package code here.
+abstract type AbstractScope end
+
+include("ps5000a.jl")
 
 end
