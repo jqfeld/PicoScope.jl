@@ -107,6 +107,8 @@ mutable struct Scope
   resolution::DeviceResolution
 end
 
+get_handle(scope::Scope) = scope.handle
+
 
 
 
@@ -114,7 +116,7 @@ function open_unit(resolution=DR_8BIT)
   handle = Ref{Int16}(0)
   serial = Ptr{Int8}(0)
   @ccall libps5000a.ps5000aOpenUnit(handle::Ref{Int16}, serial::Ptr{Int8}, resolution::Cint)::PicoStatus
-  return Scope(handle.x, Int8(0), DR_8BIT)
+  return Scope(handle.x, Int8(0), resolution)
 end
 
 
@@ -136,7 +138,7 @@ end
 
 function get_channel_info(scope::Scope, ch::Channel; N=15)
   ranges = Memory{Int32}(undef, N)
-  ranges .= 0
+  ranges .= -1 
   length = Ref{Int32}(N)
 
   ret = @ccall(libps5000a.ps5000aGetChannelInformation(
@@ -154,7 +156,7 @@ function get_channel_info(scope::Scope, ch::Channel; N=15)
     error("Error while reading channel info: $ret")
   end
 
-  Vector(ranges)[1:length]
+  Range.(filter( x-> x !=-1, Vector(ranges)))
 end
 
 function get_device_resolution(scope::Scope)
@@ -202,7 +204,12 @@ function set_channel(
   )::PicoStatus
 end
 
+"""
+    get_timebase(scope, timebase, num_samples)
 
+Get time base information (sampling rate and max number of samples) for a given
+`timebase` value (as used in `run_block` function).
+"""
 function get_timebase(
   scope::Scope,
   timebase,
@@ -254,7 +261,8 @@ function run_block(
   num_post_trig_samples,
   timebase,
   segment_index,
-  # callback::Function=nothing,
+  callback=Ptr{Cvoid}(C_NULL),
+  parameter=Ptr{Cvoid}(C_NULL),
 )
   time_indisposed_ms = Ref{Int32}(0)
 
@@ -265,8 +273,13 @@ function run_block(
     timebase::UInt32,
     time_indisposed_ms::Ref{Int32},
     segment_index::UInt32,
-    Ptr{Cvoid}(C_NULL)::Ptr{Cvoid}
+    callback::Ptr{Cvoid},
+    parameter::Ptr{Cvoid}
   )::PicoStatus
+end
+
+function stop(scope)
+  @ccall libps5000a.ps5000aStop(scope.handle::Int16)::PicoStatus
 end
 
 function is_ready(scope)
@@ -336,6 +349,32 @@ function get_values(
 
 end
 
+
+function get_minimum_value(scope::Scope)
+  value = Ref{Int16}(0)
+  @ccall libps5000a.ps5000aMinimumValue(scope.handle::Int16, value::Ref{Int16})::PicoStatus
+
+  return value.x
 end
 
+function get_analogue_offset(scope, range, coupling)
+  max_voltage = Ref{Float32}(0)
+  min_voltage = Ref{Float32}(0)
 
+  ret = @ccall libps5000a.ps5000aGetAnalogueOffset(
+    scope.handle::Int16,
+    range::Cint,
+    coupling::Cint,
+    max_voltage::Ref{Float32},
+    min_voltage::Ref{Float32}
+  )::PicoStatus
+
+  if ret != PicoScope.OK
+    error("Error while getting allowed offset range")
+  end 
+
+  return (min=min_voltage.x, max=max_voltage.x)
+
+end
+
+end
