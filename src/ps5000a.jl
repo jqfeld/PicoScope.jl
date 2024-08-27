@@ -5,6 +5,11 @@ using Libdl
 import PicoScope
 import PicoScope.PicoStatus
 
+
+export open_unit, close_unit, set_channel, set_data_buffer, set_simple_trigger,
+  set_device_resolution, get_values, get_timebase, get_analogue_offset,
+  get_device_resolution
+
 if Sys.islinux()
   const libps5000a = find_library("libps5000a")
 elseif Sys.isapple()
