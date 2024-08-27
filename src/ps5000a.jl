@@ -130,15 +130,15 @@ end
 end
 
 @enum SigGenTrigType begin
-  SIGGEN_RISING,
-  SIGGEN_FALLING,
-  SIGGEN_GATE_HIGH,
+  SIGGEN_RISING
+  SIGGEN_FALLING
+  SIGGEN_GATE_HIGH
   SIGGEN_GATE_LOW
 end
 
 @enum ExtraOperations begin
-  ES_OFF,
-  WHITENOISE,
+  ES_OFF
+  WHITENOISE
   PRBS
 end
 
