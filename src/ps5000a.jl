@@ -8,7 +8,7 @@ import PicoScope.PicoStatus
 
 export open_unit, close_unit, set_channel, set_data_buffer, set_simple_trigger,
   set_device_resolution, get_values, get_timebase, get_analogue_offset,
-  get_device_resolution
+  get_device_resolution, run_block, get_minimum_value, get_maximum_value
 
 if Sys.islinux()
   const libps5000a = find_library("libps5000a")
@@ -187,6 +187,7 @@ function set_device_resolution(scope::Scope, resolution::DeviceResolution)
     error("Error while setting resolution: $ret")
   end
 
+  scope.resolution = resolution
   return ret
 
 end
@@ -358,6 +359,13 @@ end
 function get_minimum_value(scope::Scope)
   value = Ref{Int16}(0)
   @ccall libps5000a.ps5000aMinimumValue(scope.handle::Int16, value::Ref{Int16})::PicoStatus
+
+  return value.x
+end
+
+function get_maximum_value(scope::Scope)
+  value = Ref{Int16}(0)
+  @ccall libps5000a.ps5000aMaximumValue(scope.handle::Int16, value::Ref{Int16})::PicoStatus
 
   return value.x
 end
