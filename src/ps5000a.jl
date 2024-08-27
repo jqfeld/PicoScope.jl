@@ -142,6 +142,8 @@ end
   PRBS
 end
 
+const SHOT_SWEEP_TRIGGER_CONTINUOUS_RUN = 0xFFFFFFFF
+
 mutable struct Scope
   handle::Int16
   serial::Int8
