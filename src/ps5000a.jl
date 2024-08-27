@@ -86,25 +86,61 @@ end
 end
 
 @enum ThresholdDirection begin
-  ABOVE               = 0
-  BELOW               = 1
-  RISING              = 2
-  FALLING             = 3
-  RISING_OR_FALLING   = 4
-  ABOVE_LOWER         = 5
-  BELOW_LOWER         = 6
-  RISING_LOWER        = 7
-  FALLING_LOWER       = 8
-  POSITIVE_RUNT       = 9
-  NEGATIVE_RUNT       = 10
+  ABOVE = 0
+  BELOW = 1
+  RISING = 2
+  FALLING = 3
+  RISING_OR_FALLING = 4
+  ABOVE_LOWER = 5
+  BELOW_LOWER = 6
+  RISING_LOWER = 7
+  FALLING_LOWER = 8
+  POSITIVE_RUNT = 9
+  NEGATIVE_RUNT = 10
 end
-
 const INSIDE = ABOVE
 const OUTSIDE = BELOW
 const ENTER = RISING
 const EXIT = FALLING
 const ENTER_OR_EXIT = RISING_OR_FALLING
 const NONE = RISING
+
+
+@enum WaveType begin
+  SINE
+  SQUARE
+  TRIANGLE
+  RAMP_UP
+  RAMP_DOWN
+  SINC
+  GAUSSIAN
+  HALF_SINE
+  DC_VOLTAGE
+  WHITE_NOISE
+  MAX_WAVE_TYPES
+end
+
+
+@enum SigGenTrigSource begin
+  SIGGEN_NONE
+  SIGGEN_SCOPE_TRIG
+  SIGGEN_AUX_IN
+  SIGGEN_EXT_IN
+  SIGGEN_SOFT_TRIG
+end
+
+@enum SigGenTrigType begin
+  SIGGEN_RISING,
+  SIGGEN_FALLING,
+  SIGGEN_GATE_HIGH,
+  SIGGEN_GATE_LOW
+end
+
+@enum ExtraOperations begin
+  ES_OFF,
+  WHITENOISE,
+  PRBS
+end
 
 mutable struct Scope
   handle::Int16
@@ -143,7 +179,7 @@ end
 
 function get_channel_info(scope::Scope, ch::Channel; N=15)
   ranges = Memory{Int32}(undef, N)
-  ranges .= -1 
+  ranges .= -1
   length = Ref{Int32}(N)
 
   ret = @ccall(libps5000a.ps5000aGetChannelInformation(
@@ -161,7 +197,7 @@ function get_channel_info(scope::Scope, ch::Channel; N=15)
     error("Error while reading channel info: $ret")
   end
 
-  Range.(filter( x-> x !=-1, Vector(ranges)))
+  Range.(filter(x -> x != -1, Vector(ranges)))
 end
 
 function get_device_resolution(scope::Scope)
@@ -236,7 +272,7 @@ function get_timebase(
   if ret != PicoScope.OK
     error("Error while getting timebase: $ret")
   end
-  return (time_interval_ns = time_interval_ns.x, max_samples = max_samples.x)
+  return (time_interval_ns=time_interval_ns.x, max_samples=max_samples.x)
 end
 
 
@@ -294,13 +330,13 @@ function is_ready(scope)
   @ccall libps5000a.ps5000aIsReady(scope.handle::Int16, ready::Ref{Int16})::PicoStatus
 
   return ready.x != 0
-end 
+end
 
 @enum DownsampleMode begin
-  RATIO_MODE_NONE         = 0
-  RATIO_MODE_AGGREGATE    = 1
-  RATIO_MODE_DECIMATE     = 2
-  RATIO_MODE_AVERAGE      = 4
+  RATIO_MODE_NONE = 0
+  RATIO_MODE_AGGREGATE = 1
+  RATIO_MODE_DECIMATE = 2
+  RATIO_MODE_AVERAGE = 4
   RATIO_MODE_DISTRIBUTION = 8
 end
 
@@ -384,10 +420,54 @@ function get_analogue_offset(scope, range, coupling)
 
   if ret != PicoScope.OK
     error("Error while getting allowed offset range")
-  end 
+  end
 
   return (min=min_voltage.x, max=max_voltage.x)
 
 end
+
+
+###############################################################################
+# Signal generator
+###############################################################################
+
+function setup_signal_generator(
+  scope,
+  offset_voltage,
+  peak_to_peak,
+  wave_type,
+  start_freq,
+  stop_freq,
+  increment,
+  dwell_time,
+  sweep_type,
+  operation,
+  shots,
+  sweeps,
+  trigger_type,
+  trigger_source,
+  trigger_threshold
+)
+
+  @ccall libps5000a.ps5000aSetSigGenBuiltInV2(
+    scope.handle::Int16,
+    offset_voltage::Int32,
+    peak_to_peak::UInt32,
+    wave_type::Cint,
+    start_freq::Float64,
+    stop_freq::Float64,
+    increment::Float64,
+    dwell_time::Float64,
+    sweep_type::Cint,
+    operation::Cint,
+    shots::UInt32,
+    sweeps::UInt32,
+    trigger_type::Cint,
+    trigger_source::Cint,
+    trigger_threshold::Int16
+  )::PicoStatus
+end
+
+
 
 end
